@@ -1,0 +1,91 @@
+1 Problema
+
+// Na corrida por pontos, ciclistas iniciam a prova ao mesmo tempo no mesmo lado do velodromo.
+
+// A pontuacao e definida em “sprints” que acontecem a cada 10 voltas, com 5, 3, 2 e 1 ponto(s)
+// sendo atribuıdos as 4 primeiras colocacoes em cada sprint.
+
+Ao termino da prova, a pontuacao acumulada define as colocacoes de cada ciclista.
+
+Alem da pontuacao definida a cada “sprint”, ciclistas que conseguem completar 1 volta sobre todos(as) os(as)
+outros(as), ganham 20 pontos.
+
+// A qualquer momento, no maximo, apenas 10 ciclistas podem estar lado a lado em cada ponto da pista.
+// Considere que cada ciclista ocupa exatamente 1 metro da pista.
+
+// Seu simulador deve criar n threads “ciclista” iguais. Todos os ciclistas fazem a primeira volta a
+// 30Km/h (1m a cada 120ms) mas a partir da segunda volta cada um dos ciclistas define suas velocidades
+// aleatoriamente, para realizar a volta atual, como sendo 30 ou 60Km/h (1m a cada 60ms). 
+
+// Caso a volta anterior tenha sido feita a 30Km/h, o sorteio e feito com 70% de chance de escolher 60Km/h e 30% 
+// de chance de escolher 30Km/h. Caso a volta anterior tenha sido feita a 60Km/h, o sorteio e feito com
+// 50% de chance de escolher 30Km/h e 50% de chance de escolher 60Km/h.
+
+Se a velocidade sorteada para um ciclista for de 30Km/h, todos os ciclistas que estiverem imediatamente
+atras dele na mesma linha que ele, devem pedalar a 30Km/h, independente do valor que foi sorteado para
+eles, caso nao seja possıvel ultrapassar.
+Note que apesar de ter sorteado a velocidade de 60Km/h, pode ser que um ciclista
+nao consiga de fato pedalar a essa velocidade, por exemplo, caso ele esteja na linha mais externa da pista
+com um ciclista pedalando a 30Km/h imediatamente na frente.
+
+// Ultrapassagens podem ser realizadas caso haja espac¸o em alguma pista mais externa
+// (ultrapassagens so podem ser realizadas usando as pistas externas). Desconsidere a aceleracao necessaria
+// para mudar de velocidade. 
+
+Considere ainda que nas 2 ultimas voltas ha a chance de 10% de 1 ciclista
+aleatorio qualquer e respeitando as regras de ultrapassagem, fazer essas 2 ultimas voltas a 90Km/h
+(1m a cada 40ms).
+
+// Seu codigo deve possuir um vetor compartilhado “pista” que tem um tamanho igual a d.
+
+// Cada posicao do vetor corresponde portanto a 1 metro da pista.
+// Em um dado instante de tempo, a posicao i da pista deve possuir os identificadores de todos os ciclistas que estao naquele trecho.
+
+A simulacao do seu codigo deve simular a corrida em intervalos de 60ms ate as duas ultimas voltas.
+A partir das duas ultimas voltas, caso algum ciclista tenha sido sorteado para pedalar a 90Km/h, 
+a simulacao deve passar a simular a corrida em intervalos de 20ms. 
+
+// Cada thread ciclista tem a obrigacao de escrever seu identificador na posicao correta do vetor pista
+// a cada momento em que ele entra em um novo trecho de 1m, e de remover seu identificador da posicaao
+// referente ao trecho que ele acabou de sair.
+
+// Como e possıvel perceber, cada posicao do vetor corresponde a uma variavel compartilhada que deve ter seu
+// acesso controlado. 
+
+// Assim como no mundo real, ciclistas podem “quebrar” durante a prova e desistirem. Considere que
+// a cada vez que um ciclista completa multiplos de 15 voltas, ele tem a chance de 1% de quebrar.
+
+// Caso algum ciclista quebre, essa informacao deve ser exibida na tela no momento exato em que ele quebrou.
+
+A volta em que ele estava, a posicao em que ele estava na classificacao por pontos e o identificador dele
+devem ser informados.
+
+// Entretanto, se houverem apenas 5 ciclistas na prova, a probabilidade de quebra para todos deixa de existir.
+
+// Toda vez que um ciclista quebrar, a thread dele deve ser destruıda.
+
+A saıda do seu programa deve ser um relatorio informando a cada volta completada, as posicoes de
+todos os ciclistas naquela volta.
+
+Em voltas multiplas de 10, deve tambem ser informada a pontuacao acumulada da prova, em ordem decrescente.
+
+Ao termino da corrida (depois que todos os ciclistas passarem pela linha de chegada), a pontuacao
+final de todos os ciclistas, e o instante de tempo que cada um cruzou a linha de chegada tambem
+deve ser impresso na saıda (considere que a simulacao comeca no instante de tempo zero). 
+
+Ciclistas que quebrarem devem ser identificados nessa lista final como tendo quebrado e, ao
+inves de mostrar as suas colocacoes, deve ser informada a volta em que eles quebraram. 
+
+Seu programa deve ainda permitir uma opcao de debug que informa a cada 60ms (e 20ms nas duas ultimas voltas,
+caso alguem pedale a 90Km/h) o status de cada posicao da pista, ou seja, o identificador do(s) ciclista(s)
+naquela posicao ou a informacao de que nao ha nenhum ciclista ali.
+
+Nao ha um formato padrao para a saıda do seu programa. Basta que ela informe tudo que foi solicitado
+no paragrafo anterior.
+
+// Com relacao a entrada, seu simulador deve receber como argumentos nesta
+// ordem os tres numeros inteiros: d n v
+
+Nao ha necessidade de validar a entrada.
+Lembre que seu programa e um simulador. Ou seja, a simulacao nao precisa levar o mesmo tempo
+que uma corrida de verdade levaria.

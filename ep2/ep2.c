@@ -15,16 +15,26 @@ struct cyclist {
 	int position;
 	int lane;
 	int lap;
+	int points;
 	bool half;
 };
 
 // Seu codigo deve possuir um vetor compartilhado “pista” que tem um tamanho igual a d
-int length = 250;
-int n_cyclists = 1;
-int final_lap = 160;
+int d_length;
+
+int n_cyclists;
+
+int v_final_lap;
+
 int lap = 0;
 int idCounter = 1;
+int cyclist_count;
+int point_aux[16];
+
+// Cada posicao do vetor corresponde portanto a 1 metro da pista.
+// Em um dado instante de tempo, a posicao i da pista deve possuir os identificadores de todos os ciclistas que estao naquele trecho.
 struct cyclist **pista;
+
 sem_t** sem_pista;
 pthread_mutex_t lock;
 struct cyclist *empty;
@@ -78,6 +88,9 @@ int canMove(struct cyclist *c) {
 	if (pista[c->position+1][c->lane].id == 0) {
 		for (int j = c->lane; j < 9; j++) {
 			if (pista[c->position+1][j].id == 0) {
+				// Ultrapassagens podem ser realizadas caso haja espaco em alguma pista mais externa
+				// (ultrapassagens so podem ser realizadas usando as pistas externas). Desconsidere a aceleracao necessaria
+				// para mudar de velocidade. 
 				return j;
 			}
 		}
@@ -88,9 +101,16 @@ int canMove(struct cyclist *c) {
 	return 0;
 }
 
+//  Considere que cada ciclista ocupa exatamente 1 metro da pista.
 void moveCyclistPosition(struct cyclist *c, int position, int lane) {
+// Como e possıvel perceber, cada posicao do vetor corresponde a uma variavel compartilhada que deve ter seu
+// acesso controlado. 
 	sem_wait(&sem_pista[position][lane]);
 	sem_wait(&sem_pista[c->position][c->lane]);
+
+// 	Cada thread ciclista tem a obrigacao de escrever seu identificador na posicao correta do vetor pista
+//  a cada momento em que ele entra em um novo trecho de 1m, e de remover seu identificador da posicaao
+//  referente ao trecho que ele acabou de sair.
 
 	pista[c->position][c->lane] = *empty;
 	pista[position][lane] = *c;
@@ -117,7 +137,7 @@ void move(struct cyclist *c) {
 //  a simulacao deve passar a simular a corrida em intervalos de 20ms.
 	int move = canMove(c);
 	if (move > 0) {
-		if (c->lap == length - 3) {
+		if (c->lap == d_length - 3) {
 			// intervalos de 20ms
 		} else {
 			// intervalos de 60ms
@@ -140,15 +160,52 @@ void start(struct cyclist *c) {
 			c->position = 0;
 			c->lap++;
 
+// 			A pontuacao e definida em “sprints” que acontecem a cada 10 voltas, com 5, 3, 2 e 1 ponto(s)
+// 			sendo atribuıdos as 4 primeiras colocacoes em cada sprint. 
+			if ((c->lap + 1) % 10 == 0) {
+				int aux = point_aux[(c->lap + 1) / 10];
+				if (aux < 4) {
+					switch (aux) {
+						case 0:
+							c->points += 5;
+						break;
+
+						case 1:
+							c->points += 3;
+						break;
+
+						case 2:
+							c->points += 2;
+						break;
+
+						case 3:
+							c->points += 1;
+						break;
+					}
+					point_aux[(c->lap + 1) / 10] += 1;
+				}
+			}
+
 			if (c->lap < 158) {
 				getNewSpeed(*c);
 			}
 		}
 
-		if ((c->lap + 1) % 15 == 0) {
+		// Entretanto, se houverem apenas 5 ciclistas na prova, a probabilidade de quebra para todos deixa de existir.
+		if ((c->lap + 1) % 15 == 0 && cyclist_count > 5) {
 		// Assim como no mundo real, ciclistas podem “quebrar” durante a prova e desistirem.
-		// Considere que a cada vez que um ciclista completa multiplos de 15 voltas.
-			
+		// Considere que a cada vez que um ciclista completa multiplos de 15 voltas ele tem a chance de 1% de quebrar
+			int r = (rand() % 100) + 1;
+		
+			if (r == 1) {
+				// Caso algum ciclista quebre, essa informacao deve ser exibida na tela no momento exato em que ele quebrou.
+				printf("O ciclista com id=%d quebrou!\n", c->id);
+				cyclist_count--;
+
+				// Toda vez que um ciclista quebrar, a thread dele deve ser destruıda.
+				pthread_exit(NULL);
+				return;
+			}
 		}
 		move(c);
 	}
@@ -180,6 +237,8 @@ void *prepareAndStart(void *arg) {
 
 	setStartPosition(c);
 	// tenque ter uma barreira aqui pra todos terem posição definidas
+
+	// Na corrida por pontos, ciclistas iniciam a prova ao mesmo tempo no mesmo lado do velodromo.
 	start(c);
 
 	return NULL;
@@ -199,12 +258,12 @@ void createThreads(int n, struct cyclist *cyclists[]) {
 }
 
 void prepareSemPista() {
-	sem_pista = (sem_t**)malloc (length * sizeof(sem_t*));
-	for (int i = 0; i < length; ++i) {
+	sem_pista = (sem_t**)malloc (d_length * sizeof(sem_t*));
+	for (int i = 0; i < d_length; ++i) {
 	    sem_pista[i] = (sem_t*) malloc (10 * sizeof(sem_t));
 	}
 
-	for (int i = 0; i < length; i++) {
+	for (int i = 0; i < d_length; i++) {
 		for (int j = 0; j < 10; j++) {
 			sem_init(&sem_pista[i][j], 0, 1);
 		}
@@ -212,11 +271,24 @@ void prepareSemPista() {
 }
 
 int main(int argc, char **argv) {
+// 	Com relacao a entrada, seu simulador deve receber como argumentos nesta
+//  ordem os tres numeros inteiros: d n v
+	d_length = atoi(argv[1]);
+	n_cyclists = atoi(argv[2]);
+	v_final_lap = atoi(argv[3]);
+
 	empty = malloc(sizeof(struct cyclist));
 	empty->id = 0;
+
 	prepareSemPista();
 
-	for (int i = 0; i < length; i++) {
+    pista = (struct cyclist**)malloc (d_length * sizeof(struct cyclist*));
+	for (int i = 0; i < d_length; i++) {
+		// A qualquer momento, no maximo, apenas 10 ciclistas podem estar lado a lado em cada ponto da pista.
+	    pista[i] = (struct cyclist*) malloc (10 * sizeof(struct cyclist));
+	}
+
+	for (int i = 0; i < d_length; i++) {
 		for (int j = 0; j < 10; j++) {
 			pista[i][j] = *empty;
 		}
@@ -244,12 +316,12 @@ int main(int argc, char **argv) {
 // 	empty->id = 0;
 // 	prepareSemPista();
 
-//     pista = (struct cyclist**)malloc (length * sizeof(struct cyclist*));
-// 	for (int i = 0; i < length; i++) {
+//     pista = (struct cyclist**)malloc (d_length * sizeof(struct cyclist*));
+// 	for (int i = 0; i < d_length; i++) {
 // 	    pista[i] = (struct cyclist*) malloc (10 * sizeof(struct cyclist));
 // 	}
 
-// 	for (int i = 0; i < length; i++) {
+// 	for (int i = 0; i < d_length; i++) {
 // 		for (int j = 0; j < 10; j++) {
 // 			pista[i][j] = *empty;
 // 		}
@@ -344,4 +416,14 @@ int main(int argc, char **argv) {
 //     pthread_exit(NULL);
 
 //     return EXIT_SUCCESS;
+// }
+
+// int main(int argc, char **argv) {
+// 	d_length = atoi(argv[1]);
+// 	n_cyclists = atoi(argv[2]);
+// 	v_final_lap = atoi(argv[3]);
+
+// 	printf("d=%d\n", d_length);	
+// 	printf("n=%d\n", n_cyclists);	
+// 	printf("v=%d\n", v_final_lap);	
 // }
