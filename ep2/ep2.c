@@ -1,3 +1,6 @@
+// Eric Gun Ho Lee
+// NUSP 7557095
+
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdbool.h> 
@@ -35,9 +38,13 @@ int point_aux[16];
 // Em um dado instante de tempo, a posicao i da pista deve possuir os identificadores de todos os ciclistas que estao naquele trecho.
 struct cyclist **pista;
 
+struct cyclist **cyclists;
+
 sem_t** sem_pista;
 pthread_mutex_t lock;
 struct cyclist *empty;
+
+pthread_barrier_t barrier;
 
 int mod(int a, int b) {
 	if(b < 0)
@@ -47,6 +54,10 @@ int mod(int a, int b) {
     	ret+=b;
 
    return ret;
+}
+
+void info(struct cyclist *c) {
+	printf("id:%d, pos:%d, lane:%d, lap:%d, points: %d \n", c->id, c->position, c->lane, c->lap, c->points);
 }
 
 void getNewSpeed(struct cyclist c) {
@@ -85,12 +96,11 @@ bool has_blocking(struct cyclist c) {
 }
 
 int canMove(struct cyclist *c) {
-	if (pista[c->position+1][c->lane].id == 0) {
+	if (pista[mod(c->position+1, d_length-1)][c->lane].id == 0) {
 		for (int j = c->lane; j < 9; j++) {
-			if (pista[c->position+1][j].id == 0) {
-				// Ultrapassagens podem ser realizadas caso haja espaco em alguma pista mais externa
-				// (ultrapassagens so podem ser realizadas usando as pistas externas). Desconsidere a aceleracao necessaria
-				// para mudar de velocidade. 
+			if (pista[mod(c->position+1, d_length-1)][j].id == 0) {
+				// Ultrapassagens podem ser realizadas caso haja espaco em alguma pista mais externa (ultrapassagens so
+				// podem ser realizadas usando as pistas externas). Desconsidere a aceleracao necessaria para mudar de velocidade. 
 				return j;
 			}
 		}
@@ -104,21 +114,30 @@ int canMove(struct cyclist *c) {
 //  Considere que cada ciclista ocupa exatamente 1 metro da pista.
 void moveCyclistPosition(struct cyclist *c, int position, int lane) {
 // Como e possıvel perceber, cada posicao do vetor corresponde a uma variavel compartilhada que deve ter seu
-// acesso controlado. 
-	sem_wait(&sem_pista[position][lane]);
-	sem_wait(&sem_pista[c->position][c->lane]);
+// acesso controlado.
+// printf("a\n");
+    // pthread_mutex_lock(&lock);
+	// if (position > d_length) {
+		sem_wait(&sem_pista[mod(position, d_length-1)][lane]);
+	// 	sem_wait(&sem_pista[c->position][c->lane]);
+	// } else {
+	// 	sem_wait(&sem_pista[c->position][c->lane]);
+	// 	sem_wait(&sem_pista[position % (d_length-1)][lane]);
+	// }
 
 // 	Cada thread ciclista tem a obrigacao de escrever seu identificador na posicao correta do vetor pista
 //  a cada momento em que ele entra em um novo trecho de 1m, e de remover seu identificador da posicaao
 //  referente ao trecho que ele acabou de sair.
 
 	pista[c->position][c->lane] = *empty;
-	pista[position][lane] = *c;
+	pista[mod(position, d_length-1)][lane] = *c;
 	c->position = position;
 	c->lane = lane;
 
-	sem_post(&sem_pista[c->position][c->lane]);
-	sem_post(&sem_pista[position][lane]);
+	sem_post(&sem_pista[mod(position, d_length-1)][lane]);
+	// sem_post(&sem_pista[c->position][c->lane]);
+    // pthread_mutex_unlock(&lock);
+// printf("b\n");
 }
 
 void setCyclistPosition(struct cyclist *c, int position, int lane) {
@@ -135,8 +154,14 @@ void move(struct cyclist *c) {
 // 	A simulacao do seu codigo deve simular a corrida em intervalos de 60ms ate as duas ultimas voltas.
 //  A partir das duas ultimas voltas, caso algum ciclista tenha sido sorteado para pedalar a 90Km/h, 
 //  a simulacao deve passar a simular a corrida em intervalos de 20ms.
+	// printf("teste \n");
 	int move = canMove(c);
-	if (move > 0) {
+	// printf("%d esta movendo para %d \n", c->id, move);
+	// if (c->id == 10) {
+	// 	info(c);
+	// }
+
+	if (move >= 0) {
 		if (c->lap == d_length - 3) {
 			// intervalos de 20ms
 		} else {
@@ -155,13 +180,15 @@ void move(struct cyclist *c) {
 }
 
 void start(struct cyclist *c) {
-	while(c->lap < 160) {
+	while(c->lap < v_final_lap) {
+		// printf("opaa\n");
 		if (c->position == 250) {
 			c->position = 0;
-			c->lap++;
+			c->lap = c->lap + 1;
+			// printf("O ciclista deu id %d volta %d\n", c->id, c->lap);
 
-// 			A pontuacao e definida em “sprints” que acontecem a cada 10 voltas, com 5, 3, 2 e 1 ponto(s)
-// 			sendo atribuıdos as 4 primeiras colocacoes em cada sprint. 
+		// A pontuacao e definida em “sprints” que acontecem a cada 10 voltas, com 5, 3, 2 e 1 ponto(s)
+		// sendo atribuıdos as 4 primeiras colocacoes em cada sprint. 
 			if ((c->lap + 1) % 10 == 0) {
 				int aux = point_aux[(c->lap + 1) / 10];
 				if (aux < 4) {
@@ -188,6 +215,7 @@ void start(struct cyclist *c) {
 
 			if (c->lap < 158) {
 				getNewSpeed(*c);
+				// printf("nova velocidade de %d eh %d\n", c->id, c->speed);
 			}
 		}
 
@@ -207,7 +235,15 @@ void start(struct cyclist *c) {
 				return;
 			}
 		}
+
+		if (c->lap > lap) {
+			lap++;
+			// printf("O ciclista %d iniciou a volta %d\n", c->id, lap);
+			info(c);
+		}
+
 		move(c);
+		pthread_barrier_wait(&barrier);
 	}
 }
 
@@ -220,23 +256,26 @@ void setStartPosition(struct cyclist *c) {
 	while (pista[position][lane].speed != 0) {
 		if (lane == 9) {
 			lane = 0;
-			position = mod(position - 1, 249);
+			position = mod(position - 1, d_length-1);
 		} else {
 			lane++;
 		}
 	}
 
+	printf("ciclista %d vai comecar na pos %d e linha %d\n", c->id, position, lane);
 	setCyclistPosition(c, position, lane);
 }
 
 void *prepareAndStart(void *arg) {
-	struct cyclist *c = (struct cyclist* ) malloc(sizeof(struct cyclist));	
+	struct cyclist *c =  (struct cyclist *) arg;
+	c = (struct cyclist* ) malloc(sizeof(struct cyclist));
+
 	c->speed = 30;
 	c->lap = 0;
 	c->id = getCyclistId();
 
 	setStartPosition(c);
-	// tenque ter uma barreira aqui pra todos terem posição definidas
+	pthread_barrier_wait(&barrier);
 
 	// Na corrida por pontos, ciclistas iniciam a prova ao mesmo tempo no mesmo lado do velodromo.
 	start(c);
@@ -270,17 +309,9 @@ void prepareSemPista() {
 	}
 }
 
-int main(int argc, char **argv) {
-// 	Com relacao a entrada, seu simulador deve receber como argumentos nesta
-//  ordem os tres numeros inteiros: d n v
-	d_length = atoi(argv[1]);
-	n_cyclists = atoi(argv[2]);
-	v_final_lap = atoi(argv[3]);
-
+void preparaPista() {
 	empty = malloc(sizeof(struct cyclist));
 	empty->id = 0;
-
-	prepareSemPista();
 
     pista = (struct cyclist**)malloc (d_length * sizeof(struct cyclist*));
 	for (int i = 0; i < d_length; i++) {
@@ -293,14 +324,29 @@ int main(int argc, char **argv) {
 			pista[i][j] = *empty;
 		}
 	}
+}
 
+int main(int argc, char **argv) {
+// 	Com relacao a entrada, seu simulador deve receber como argumentos nesta
+//  ordem os tres numeros inteiros: d n v
+	d_length = atoi(argv[1]);
+	n_cyclists = atoi(argv[2]);
+	v_final_lap = atoi(argv[3]);
+
+	prepareSemPista();
+	preparaPista();
+
+	// mutex
 	if (pthread_mutex_init(&lock, NULL) != 0) {
         printf("\n mutex init failed\n");
         return EXIT_SUCCESS;
     }
 
-    struct cyclist *cyclists[n_cyclists]; 
+	cyclists = (struct cyclist**) malloc (n_cyclists * sizeof(struct cyclist*));
+
     srand(time(NULL)); 
+
+    pthread_barrier_init(&barrier, NULL, n_cyclists);
 
     createThreads(n_cyclists, cyclists);
 
@@ -310,7 +356,7 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-// // testa start position
+// // // testa start position
 // int main(int argc, char **argv) {
 // 	empty = malloc(sizeof(struct cyclist));
 // 	empty->id = 0;
