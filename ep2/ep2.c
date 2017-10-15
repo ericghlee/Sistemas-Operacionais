@@ -379,7 +379,12 @@ int main(int argc, char **argv) {
 
     createThreads(n_cyclists, cyclists);
 
-	pthread_exit(NULL);
+    for (int i = 0; i < n_cyclists; ++i){
+    	/* code */
+    	pthread_join(cthreads[i], NULL);
+    }
+	// pthread_exit(NULL);
+
 	pthread_mutex_destroy(&lock);
 
     return EXIT_SUCCESS;
