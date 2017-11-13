@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ep3.iml" filepath="$PROJECT_DIR$/.idea/modules/ep3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ep3_main.iml" filepath="$PROJECT_DIR$/.idea/modules/ep3_main.iml" group="ep3" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ep3_test.iml" filepath="$PROJECT_DIR$/.idea/modules/ep3_test.iml" group="ep3" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/main_main.iml" filepath="$PROJECT_DIR$/.idea/modules/main_main.iml" group="main" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/main_test.iml" filepath="$PROJECT_DIR$/.idea/modules/main_test.iml" group="main" />
+    </modules>
+  </component>
+</project>
