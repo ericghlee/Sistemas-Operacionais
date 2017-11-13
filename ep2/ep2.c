@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include "barreira.c"
 
 struct cyclist {
 	int id;
@@ -40,11 +41,36 @@ struct cyclist **pista;
 
 struct cyclist **cyclists;
 
-sem_t** sem_pista;
+sem_t*** sem_pista;
 pthread_mutex_t lock;
 struct cyclist *empty;
 
 pthread_barrier_t barrier;
+
+pthread_t *cthreads;
+
+static char *rand_string(char *str, size_t size)
+{
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK...";
+    if (size) {
+        --size;
+        for (size_t n = 0; n < size; n++) {
+            int key = rand() % (int) (sizeof charset - 1);
+            str[n] = charset[key];
+        }
+        str[size] = '\0';
+    }
+    return str;
+}
+
+char* rand_string_alloc(size_t size)
+{
+     char *s = malloc(size + 1);
+     if (s) {
+         rand_string(s, size);
+     }
+     return s;
+}
 
 int mod(int a, int b) {
 	if(b < 0)
@@ -118,7 +144,7 @@ void moveCyclistPosition(struct cyclist *c, int position, int lane) {
 // printf("a\n");
     // pthread_mutex_lock(&lock);
 	// if (position > d_length) {
-		sem_wait(&sem_pista[mod(position, d_length-1)][lane]);
+		sem_wait(sem_pista[mod(position, d_length-1)][lane]);
 	// 	sem_wait(&sem_pista[c->position][c->lane]);
 	// } else {
 	// 	sem_wait(&sem_pista[c->position][c->lane]);
@@ -134,20 +160,20 @@ void moveCyclistPosition(struct cyclist *c, int position, int lane) {
 	c->position = position;
 	c->lane = lane;
 
-	sem_post(&sem_pista[mod(position, d_length-1)][lane]);
+	sem_post(sem_pista[mod(position, d_length-1)][lane]);
 	// sem_post(&sem_pista[c->position][c->lane]);
     // pthread_mutex_unlock(&lock);
 // printf("b\n");
 }
 
 void setCyclistPosition(struct cyclist *c, int position, int lane) {
-	sem_wait(&sem_pista[position][lane]);
+	sem_wait(sem_pista[position][lane]);
 
 	pista[position][lane] = *c;
 	c->position = position;
 	c->lane = lane;
 
-	sem_post(&sem_pista[position][lane]);
+	sem_post(sem_pista[position][lane]);
 }
 
 void move(struct cyclist *c) {
@@ -285,7 +311,7 @@ void *prepareAndStart(void *arg) {
 
 // Seu simulador deve criar n threads “ciclista” iguais.
 void createThreads(int n, struct cyclist *cyclists[]) {
-	pthread_t cthreads[n];
+	cthreads = malloc(n * sizeof(pthread_t *));
 
 	for (int i = 0; i < n; i++) {
 
@@ -297,18 +323,21 @@ void createThreads(int n, struct cyclist *cyclists[]) {
 }
 
 void prepareSemPista() {
-	sem_pista = (sem_t**)malloc (d_length * sizeof(sem_t*));
+	sem_pista = (sem_t***)malloc (d_length * sizeof(sem_t**));
 	for (int i = 0; i < d_length; ++i) {
-	    sem_pista[i] = (sem_t*) malloc (10 * sizeof(sem_t));
+	    sem_pista[i] = (sem_t**) malloc (10 * sizeof(sem_t*));
 	}
 
 	for (int i = 0; i < d_length; i++) {
 		for (int j = 0; j < 10; j++) {
-			sem_init(&sem_pista[i][j], 0, 1);
+			// sem_open(&sem_pista[i][j], 0, 1);
+			// printf("%d %d\n", i, j);
+			char* name = rand_string_alloc(5);
+			// sem_unlink(name);
+			sem_pista[i][j] = sem_open(name, O_CREAT, 0644, 1);	
 		}
 	}
 }
-
 void preparaPista() {
 	empty = malloc(sizeof(struct cyclist));
 	empty->id = 0;
@@ -350,7 +379,12 @@ int main(int argc, char **argv) {
 
     createThreads(n_cyclists, cyclists);
 
-	pthread_exit(NULL);
+    for (int i = 0; i < n_cyclists; ++i){
+    	/* code */
+    	pthread_join(cthreads[i], NULL);
+    }
+	// pthread_exit(NULL);
+
 	pthread_mutex_destroy(&lock);
 
     return EXIT_SUCCESS;
