@@ -1,11 +1,14 @@
 1 Problema
 
+// A simulacao deve considerar que a corrida e em um velodromo com d metros, que n ciclistas
+// comecam a prova e que v voltas serao realizadas (d > 249, 5 < n ≤ 5 × d e v e multiplo de 20).
+// A qualquer momento, no maximo, apenas 10 ciclistas podem estar lado a lado em cada pon ´ to da pista.
+// Considere que cada ciclista ocupa exatamente 1 metro da pista
+
 // Na corrida por pontos, ciclistas iniciam a prova ao mesmo tempo no mesmo lado do velodromo.
 
 // A pontuacao e definida em “sprints” que acontecem a cada 10 voltas, com 5, 3, 2 e 1 ponto(s)
 // sendo atribuıdos as 4 primeiras colocacoes em cada sprint.
-
-Ao termino da prova, a pontuacao acumulada define as colocacoes de cada ciclista.
 
 Alem da pontuacao definida a cada “sprint”, ciclistas que conseguem completar 1 volta sobre todos(as) os(as)
 outros(as), ganham 20 pontos.
