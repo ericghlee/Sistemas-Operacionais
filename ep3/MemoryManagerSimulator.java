@@ -31,6 +31,8 @@ public class MemoryManagerSimulator {
                         break;
 
                     case "executa":
+
+
                         break;
 
                     case "sai":

@@ -1,4 +1,4 @@
 public interface SpaceManager {
 
-    public void getNextSpace();
+    public void getNextSpace(int size, int[] bitmap);
 }
