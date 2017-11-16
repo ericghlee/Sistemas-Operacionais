@@ -5,16 +5,16 @@ class FileUtilsTest {
 
     @Test
     public void testReadFile() throws Exception {
-        MemorySchedule memorySchedule = FileUtils.readFile("entryExample");
+        MemoryScheduler memoryScheduler = FileUtils.readFile("entryExample");
 
-        Assert.assertEquals(40, memorySchedule.getTotal());
-        Assert.assertEquals(20, memorySchedule.getVirtual());
-        Assert.assertEquals(4, memorySchedule.getSize());
-        Assert.assertEquals(1, memorySchedule.getPage());
+        Assert.assertEquals(40, memoryScheduler.getTotal());
+        Assert.assertEquals(20, memoryScheduler.getVirtual());
+        Assert.assertEquals(4, memoryScheduler.getSize());
+        Assert.assertEquals(1, memoryScheduler.getPage());
 
         Instruction instruction;
 
-        instruction = memorySchedule.getNextInstruction();
+        instruction = memoryScheduler.getNextInstruction();
         Assert.assertTrue(instruction instanceof ProcessInstruction);
 
         ProcessInstruction processInstruction = (ProcessInstruction) instruction;
@@ -33,7 +33,7 @@ class FileUtilsTest {
             Assert.assertEquals(times[i], access.getTime());
         }
 
-        instruction = memorySchedule.getNextInstruction();
+        instruction = memoryScheduler.getNextInstruction();
         Assert.assertTrue(instruction instanceof CompactInstruction);
         Assert.assertEquals(20, ((CompactInstruction) instruction).getStart());
 
@@ -43,7 +43,7 @@ class FileUtilsTest {
     public void testReadFirstLine() {
         String line = "1 2 3 4";
 
-        MemorySchedule result = FileUtils.readFirstLine(line);
+        MemoryScheduler result = FileUtils.readFirstLine(line);
 
         Assert.assertEquals(1, result.getTotal());
         Assert.assertEquals(2, result.getVirtual());

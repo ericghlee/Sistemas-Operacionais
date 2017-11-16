@@ -3,7 +3,7 @@ import java.util.Scanner;
 
 public class MemoryManagerSimulator {
 
-    private static MemorySchedule memorySchedule;
+    private static MemoryScheduler memoryScheduler;
     private static SpaceManager spaceManager;
     private static PagingStrategy pagingStrategy;
 
@@ -21,17 +21,36 @@ public class MemoryManagerSimulator {
 
                 switch (entrys[0]) {
                     case "carrega":
-                        memorySchedule = FileUtils.readFile(entrys[1]);
+                        memoryScheduler = FileUtils.readFile(entrys[1]);
                         break;
 
                     case "espaco":
+                        switch (Integer.valueOf(entrys[1])) {
+                            case 1:
+                                spaceManager = new BestFit();
+                                break;
+                            case 2:
+                                break;
+                            case 3:
+                                break;
+                        }
+
                         break;
 
                     case "substitui":
+                        switch (Integer.valueOf(entrys[1])) {
+                            case 1:
+                                break;
+                            case 2:
+                                break;
+                            case 3:
+                                break;
+                        }
                         break;
 
                     case "executa":
-
+                        Executor executor = new Executor(memoryScheduler, spaceManager, pagingStrategy);
+                        executor.execute();
 
                         break;
 

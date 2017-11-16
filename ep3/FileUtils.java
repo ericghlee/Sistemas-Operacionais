@@ -4,16 +4,16 @@ import java.nio.file.Paths;
 
 public class FileUtils {
 
-    public static MemorySchedule readFile(String fileName) throws IOException {
+    public static MemoryScheduler readFile(String fileName) throws IOException {
 
         String firstLine = Files.lines(Paths.get(fileName)).findFirst().get();
 
-        MemorySchedule memorySchedule = readFirstLine(firstLine);
+        MemoryScheduler memoryScheduler = readFirstLine(firstLine);
 
         Files.lines(Paths.get(fileName)).filter(x -> !x.equals(firstLine))
-                .forEachOrdered(x -> memorySchedule.addInstruction(readLine(x)));
+                .forEachOrdered(x -> memoryScheduler.addInstruction(readLine(x)));
 
-        return memorySchedule;
+        return memoryScheduler;
     }
 
     public static Instruction readLine(String line) {
@@ -26,7 +26,7 @@ public class FileUtils {
         }
     }
 
-    public static MemorySchedule readFirstLine(String firstLine) {
+    public static MemoryScheduler readFirstLine(String firstLine) {
         final String[] firstLineData = firstLine.split(" ");
 
         final int total = Integer.valueOf(firstLineData[0]);
@@ -37,6 +37,6 @@ public class FileUtils {
 
         final int page = Integer.valueOf(firstLineData[3]);
 
-        return new MemorySchedule(total, virtual, size, page);
+        return new MemoryScheduler(total, virtual, size, page);
     }
 }
