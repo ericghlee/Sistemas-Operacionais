@@ -4,11 +4,11 @@ import java.util.List;
 
 public abstract class PagingStrategy {
 
-    private int pageSize;
+    int pageSize;
 
-    private List<Page> pages = new ArrayList<>();
+    List<Page> pages = new ArrayList<>();
 
-    private LinkedList<Page> activePages;
+    List<Page> activePages;
 
     public PagingStrategy(int pageSize, int virtualMemory) {
         this.pageSize = pageSize;
@@ -31,4 +31,8 @@ public abstract class PagingStrategy {
     public abstract void switchPage(Page page);
 
     public abstract Page nextPage();
+
+    public List<Page> getPages() {
+        return pages;
+    }
 }
