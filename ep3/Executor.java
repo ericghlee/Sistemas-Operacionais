@@ -7,6 +7,8 @@ public class Executor {
 
     private final PagingStrategy pagingStrategy;
 
+    private Bitmap bitmap;
+
     public Executor(MemoryScheduler memoryScheduler, SpaceManager spaceManager, PagingStrategy pagingStrategy) {
         this.memoryScheduler = memoryScheduler;
         this.spaceManager = spaceManager;
@@ -15,18 +17,16 @@ public class Executor {
 
     public void execute() {
         try {
-            Bitmap bitmap = new Bitmap(memoryScheduler.getSize(), memoryScheduler.getVirtual());
+            pagingStrategy.setup(memoryScheduler);
+            bitmap = new Bitmap(memoryScheduler.getSize(), memoryScheduler.getVirtual());
 
             while (memoryScheduler.haveNext()) {
                 Instruction instruction = memoryScheduler.getNextInstruction();
 
                 if (instruction instanceof ProcessInstruction) {
-                    Page page = pagingStrategy.getPage(bitmap);
-
-
-
+                    processInstruction((ProcessInstruction) instruction);
                 } else {
-
+                    processInstruction((CompactInstruction) instruction);
                 }
             }
 
@@ -38,6 +38,16 @@ public class Executor {
     }
 
     private void processInstruction(ProcessInstruction instruction) {
+        int position = spaceManager.getPosition(instruction.getMemory(), bitmap.getVirtualBitMap());
+        Page page = pagingStrategy.getPage(position);
+
+        if (pagingStrategy.getPageToUpdate() != null) {
+            bitmap.updateVirtual(page, memoryScheduler.getPage());
+        }
+
+    }
+
+    private void processInstruction(CompactInstruction instruction) {
 
     }
 }

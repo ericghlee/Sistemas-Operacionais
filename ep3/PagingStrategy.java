@@ -1,38 +1,73 @@
-import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class PagingStrategy {
 
     int pageSize;
 
-    List<Page> pages = new ArrayList<>();
+    int maxActive;
+
+    Map<Integer, Page> pages = new HashMap<>();
 
     List<Page> activePages;
 
-    public PagingStrategy(int pageSize, int virtualMemory) {
+    Page pageToUpdate;
+
+    public PagingStrategy(int pageSize) {
         this.pageSize = pageSize;
     }
 
-    public Page getPage(Bitmap bitmap, int processId) {
-        for (Page page : pages) {
-            if (page.getProcessId() == processId) {
-                if (!activePages.contains(page)) {
-                    switchPage(page);
-                }
+    public Page getPage(int position) {
+        int pageIndex = position/pageSize;
+        Page page = pages.get(pageIndex);
 
-                return page;
-            }
+        if (activePages.contains(page)) {
+            return page;
+        } else {
+            return switchPage(page);
         }
-
-        return nextPage();
     }
 
-    public abstract void switchPage(Page page);
+    public void setup(MemoryScheduler memoryScheduler) {
+        maxActive = memoryScheduler.getTotal()/memoryScheduler.getPage();
+
+        int counter = memoryScheduler.getVirtual();
+        int totalPages = memoryScheduler.getVirtual()/memoryScheduler.getPage();
+
+        for(int i = 0; i < totalPages; i++) {
+            int[] memory;
+
+            if (counter > pageSize) {
+                memory = new int[pageSize];
+                counter -= pageSize;
+            } else {
+                memory = new int[counter];
+            }
+
+            Arrays.fill(memory, -1);
+            pages.put(i, new Page(i, memory));
+        }
+
+        initActivePages();
+    }
+
+    public abstract Page switchPage(Page page);
 
     public abstract Page nextPage();
 
-    public List<Page> getPages() {
-        return pages;
+    public abstract void initActivePages();
+
+    public Page getPageToUpdate() {
+        return pageToUpdate;
+    }
+
+    public void setPageToUpdate(Page pageToUpdate) {
+        this.pageToUpdate = pageToUpdate;
+    }
+
+    public int getPageSize() {
+        return pageSize;
     }
 }

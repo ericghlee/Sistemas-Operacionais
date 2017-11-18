@@ -1,40 +1,38 @@
-import java.util.Arrays;
 import java.util.LinkedList;
 
 public class FIFOStrategy extends PagingStrategy {
 
-    public FIFOStrategy(int pageSize, int virtualMemory) {
-        super(pageSize, virtualMemory);
-        activePages = new LinkedList<>();
-
-        int counter = virtualMemory;
-        int totalPages = virtualMemory/pageSize;
-        for(int i = 0; i < totalPages; i++) {
-            int[] memory;
-
-            if (counter > pageSize) {
-                memory = new int[pageSize];
-                counter -= pageSize;
-            } else {
-                memory = new int[counter];
-            }
-
-            Arrays.fill(memory, -1);
-            pages.add(new Page(i, memory));
-        }
+    public FIFOStrategy(int pageSize) {
+        super(pageSize);
     }
 
     @Override
-    public void switchPage(Page page) {
-        if (activePages.isEmpty()) {
-            ((LinkedList) activePages).addLast(page);
+    public Page switchPage(Page page) {
+        if (activePages.size() == maxActive) {
+            Page candidate = ((LinkedList<Page>) activePages).pollFirst();
+            page.setStart(candidate.getStart());
+            page.setEnd(candidate.getEnd());
+
+            if (candidate.isChanged()) {
+                pageToUpdate = candidate;
+            }
         } else {
-            page = ((LinkedList<Page>) activePages).pollFirst();
+            page.setStart(last);
+            page.setEnd(page.getMemory().length);
         }
+
+        ((LinkedList) activePages).addLast(page);
+
+        return page;
     }
 
     @Override
     public Page nextPage() {
         return null;
+    }
+
+    @Override
+    public void initActivePages() {
+        activePages = new LinkedList<>();
     }
 }

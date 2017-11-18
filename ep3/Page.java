@@ -4,11 +4,16 @@ public class Page {
 
     private int[] memory;
 
-    private int processId;
+    private boolean isChanged;
+
+    private int start;
+
+    private int end;
 
     public Page(int pageIndex, int[] memory) {
         this.pageIndex = pageIndex;
         this.memory = memory;
+        this.isChanged = false;
     }
 
     public int getPageIndex() {
@@ -23,7 +28,31 @@ public class Page {
         this.memory = memory;
     }
 
-    public int getProcessId() {
-        return processId;
+    public void setChanged() {
+        isChanged = true;
+    }
+
+    public void setNotChanged() {
+        isChanged = false;
+    }
+
+    public boolean isChanged() {
+        return isChanged;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public void setStart(int start) {
+        this.start = start;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public void setEnd(int end) {
+        this.end = end;
     }
 }

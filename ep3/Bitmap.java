@@ -59,4 +59,11 @@ public class Bitmap {
         BufferedWriter writer = Files.newBufferedWriter(path);
         writer.write(Arrays.toString(map));
     }
+
+    public void updateVirtual(Page page, int pageSize) {
+        for (int i = page.getPageIndex() * pageSize,  j = 0; j < page.getMemory().length; i++, j++) {
+            virtualBitMap[i] = page.getMemory()[j];
+        }
+    }
+
 }
